@@ -1,0 +1,143 @@
+{
+  "skill_name": "dotnet-aspire",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/dotnet-aspire audit",
+      "expected_output": "Audit mode. The agent records git status, dotnet --info, aspire --version, the container runtime and running AppHosts (aspire ps), reads CLAUDE.md/AGENTS.md, then discovers the authoritative solution, executables, existing AppHosts (including any test AppHost), the dependency inventory with evidence and classification, databases with schema source and strategy A-E, every protected service's authentication (scheme, key source and format, configurability, Authority source, roles, scopes, claim types, login endpoints) with a proposed trust strategy A-D, telemetry and existing tests. It presents the gap report and plan and stops without modifying any file or running builds.",
+      "files": [],
+      "expectations": [
+        "No file in the repository was created or modified (git status unchanged apart from pre-existing changes) and no build, restore, test run or database connection happened",
+        "The report states the application name {App} and where it comes from (common project prefix or solution name)",
+        "Every listed dependency cites a file (and line) as evidence and is classified (runtime-required, development-only, test-only, external, optional or unused)",
+        "A package referenced but never used on a runtime path is not reported as a required dependency",
+        "Each database has engine/provider, consumers, authoritative schema source and a proposed strategy (A-E) with justification",
+        "Each protected service lists its scheme, where the signing key comes from, whether issuer/audience/Authority are configurable, the role and scope claim types, and a trust strategy (A-D); services with login endpoints are not treated differently",
+        "A second AppHost used only by tests, if present, is reported as a gap to consolidate",
+        "Development-only authentication bypasses or signing keys committed to configuration, if present, are reported with file:line and the value redacted",
+        "Decisions needing the user (preview packages, global installs, moving or consolidating AppHosts, production code changes for authentication, external credentials) are listed"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/dotnet-aspire setup",
+      "expected_output": "Setup on a repository with an ASP.NET Core API that issues and validates HS256 tokens with a key from configuration (login endpoint), a second validation-only API with config-bound JwtBearer and a production Authority, EF Core migrations on PostgreSQL, a .slnx and no Aspire or tests. After discovery and a confirmed plan the agent creates local/aspire/{App}.AppHost with Local/Component/Functional modes and AppHostContract, local/aspire/{App}.DbInitializer (schema every start, seed only in Local mode), local/database/seed, local/tools/devtoken.cs + devtoken.json with profiles from the real roles and scopes, ServiceDefaults under src when justified, the test projects under tests/ (UnitTests, ComponentTests, FunctionalTests per API, one Tests.Shared) that start the same AppHost, a trust mapping per API, and local/local-development.md and tests/README.md. It runs devtoken init, builds, runs the tests twice, proves a test can fail, starts the AppHost, verifies the two-run check, smoke requests with devtoken profiles (200/401/403), telemetry and that no identity provider is contacted, and reports real exit codes.",
+      "files": [],
+      "expectations": [
+        "Exactly one project uses Aspire.AppHost.Sdk: local/aspire/{App}.AppHost/{App}.AppHost.csproj; there is no tests/orchestration folder and no test-only AppHost",
+        "The AppHost reads a RunMode-style key with Local as default and the component/functional fixtures start it with DistributedApplicationTestingBuilder and the test mode as an argument",
+        "No resource uses WithDataVolume, WithDataBindMount or a persistent lifetime; the DbInitializer applies the schema in every mode and the seed scripts only in Local mode",
+        "Every created project follows {App}.<Role>, is in the existing solution, and no project under src/ references local/ or tests/",
+        "Component and functional test projects reference the AppHost with Aliases=\"apphost\" (or otherwise avoid the duplicate Program type) and build without warnings when warnings are errors",
+        "Both APIs get a trust mapping in the configuration keys they already read; the config-bound API has its Authority cleared; no production code or authorization policy was changed",
+        "local/tools/devtoken.json contains no secret; devtoken init stored the key outside the repository (AppHost user secrets); devtoken profiles use the real roles/scopes and include a profile without permissions",
+        "devtoken get prints only the token on stdout and works without any HTTP call; the login endpoint was not used to obtain tokens",
+        "Tests use TestTokenIssuer with a key generated per run; the authentication matrix (valid 2xx, no token 401, invalid/expired/wrong issuer/wrong audience/unknown key/unsigned 401, insufficient permissions 403) passes for each API in component tests and at least the minimal set in functional tests",
+        "The component fixture fails if any JwtBearer scheme keeps an Authority/MetadataAddress, and the functional tests assert that no outbound call was recorded",
+        "dotnet build and dotnet test were executed and their real results reported; one new test was shown to fail and was reverted",
+        "The AppHost was started, the two-run check was executed (run-1 data gone, seed back) and smoke requests with devtoken tokens returned 200/401/403 as expected",
+        "No token, key, generated password or dashboard login token appears in committed files or in the final report"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "/dotnet-aspire repair",
+      "expected_output": "Repair on a repository with local/{App}.AppHost (with WithDataVolume on PostgreSQL and a hardcoded connection string) and a separate tests/orchestration/{App}.Tests.AppHost used by component/functional tests with TestHostContract and a WireMock identity stub. The agent reports each gap with evidence and proposes consolidating into one AppHost, removing persistence and replacing the stub by the configuration trust mapping where the APIs allow it; after consent it moves test-only additions into the shared AppHost as test-mode additions, switches the fixtures to the shared AppHost, relinks the contract from the AppHost folder, removes the test AppHost only after the suite passes, reports orphaned volumes by name without deleting them, and validates.",
+      "files": [],
+      "expectations": [
+        "The existing local AppHost was not deleted and recreated; its name and resource names were preserved (moves only with consent via git mv)",
+        "WithDataVolume/persistent lifetimes were removed from the model, a schema + seed initializer exists, and the orphaned volumes/containers were reported by name but not deleted",
+        "The hardcoded connection string was replaced by a resource reference whose name matches the configuration key the application reads",
+        "The test AppHost's resources and settings were moved into the shared AppHost as test-mode additions, without duplicating the topology",
+        "Fixtures start the shared AppHost in Component/Functional mode; the former test AppHost project was removed from the solution only after the full test suite passed on the shared one",
+        "The identity stub was replaced by explicit-key trust where the application reads its key or JwtBearer options from configuration, or kept only with a stated strategy-C justification",
+        "dotnet sln list, dotnet build and dotnet test were run after the change with their results reported"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "/dotnet-aspire debug GET /orders devuelve 500 desde que añadí el campo Status",
+      "expected_output": "Debug mode. The agent checks aspire ps before starting anything, starts/waits only if needed, gets a token with devtoken for a profile allowed on GET /orders, reproduces the request, finds the failing trace with aspire otel traces, correlates structured logs by trace id, identifies the cause from evidence (e.g. a missing migration for the new column), applies the smallest fix (adds the migration only with consent, or points out the pending model change), restarts only what is needed, repeats GET /orders, confirms the 200 response and the new trace, and reports cause, change, evidence and verification honestly.",
+      "files": [],
+      "expectations": [
+        "aspire ps or aspire describe was used before deciding to start the AppHost; no duplicate AppHost was started and AppHosts of other repositories were not stopped",
+        "The protected request was reproduced with a devtoken token (not a login endpoint, not an external provider) and the token was never printed in the report",
+        "The failing trace or logs were retrieved with aspire otel traces/logs or aspire logs before any code change",
+        "The stated cause is backed by quoted evidence and labelled confirmed or hypothesis",
+        "The fix is minimal and does not drop the database outside the AppHost's own ephemeral containers",
+        "The original request was repeated after the fix and its new response and trace were checked; a Healthy status alone was not presented as proof"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Añade tests de componente para POST /orders, incluyendo los casos de autorización por rol",
+      "expected_output": "Incremental mode on a repository whose infrastructure already exists. Short report (reused fixture, base classes, repositories, builders; behaviour of POST /orders: contract, validation, policies and roles, side effects). No regeneration of the AppHost, fixtures, base classes, attributes or token issuer. A test class in ComponentTests mirroring production with the success case (status, body, database state, published message if any), validation failures (400 with member names), anonymous 401, a [Theory] over TestUser values with CreateClient(user) including AuthenticatedWithoutRoles 403, and a third-party failure case if the endpoint calls one. Only missing builders, repository methods or TestUser values are added. Tests run, one is shown to fail and reverted.",
+      "files": [],
+      "expectations": [
+        "The agent identified the mode as incremental and reported the infrastructure it reuses",
+        "No AppHost, fixture, test base, attribute or token issuer file was rewritten (only additive changes)",
+        "There is a success test asserting the status code and the persisted order through a test repository",
+        "There is a test asserting 400 for invalid input that checks the failing member names, and one asserting 401 for an anonymous request",
+        "Role cases are a [Theory] whose rows are TestUser values using CreateClient(user), including the authenticated user without roles expecting 403",
+        "Tokens come from the TestTokenIssuer (no login endpoint, no test authentication scheme, validation not relaxed)",
+        "Tests that write data carry [ResetDatabase]; no test uses a literal id",
+        "The new tests were executed and passed, or the agent stated precisely why they could not run; one was shown to fail and was reverted"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Añade un test funcional del flujo de pago que publica en Kafka",
+      "expected_output": "Incremental mode. The agent locates the payment flow (endpoint, payment provider client, Kafka topic and event, consumer effects). If FunctionalTests or the Kafka/WireMock pieces are missing it announces a partial setup of only those pieces, added to the shared AppHost as test-mode additions and to the fixture. One black-box test: Arrange seeds the order and stubs the provider in WireMock; Act performs one HTTP call with a TestUser client; Assert checks the response, the Kafka event (only messages after the test started, timeout, predicate on the order id), the eventual state with Eventually and the WireMock call, and that no outbound call left the machine.",
+      "files": [],
+      "expectations": [
+        "The test lives in the FunctionalTests project, derives from the functional test base and uses no WebApplicationFactory, DI access or replacement",
+        "The application runs under the shared AppHost in Functional mode; no new AppHost was created",
+        "The payment provider is stubbed with WireMock in Arrange and the received call is verified in Assert",
+        "The Kafka assertion considers only messages produced after the test started and uses a timeout",
+        "Eventual state is awaited with a polling helper, never with Thread.Sleep or a fixed Task.Delay",
+        "If functional infrastructure was missing, the agent announced a partial setup and created only the missing pieces",
+        "The test was executed and passed, or the agent stated precisely why it could not run"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Quiero probar todas las APIs en local sin depender del proveedor de identidad. Configura JWT firmados localmente para desarrollo y para los tests.",
+      "expected_output": "The agent discovers every service that validates JWTs (including those that also expose login endpoints and gRPC hosts), decides a trust strategy per service from evidence (key from configuration, config-bound JwtBearer, or a question when only a production change would work), writes the trust mapping in AppHostContract and applies it in the AppHost, adds devtoken with profiles from the real roles/scopes/policies, makes the test fixtures pass per-run keys, adds the authentication matrix tests and verifies that no identity provider is contacted. Production configuration, policies and validation settings are unchanged.",
+      "files": [],
+      "expectations": [
+        "Every protected service has a trust mapping or an explicit question to the user; services with and without login endpoints follow the same mechanism",
+        "No Authority, MetadataAddress, remote JWKS, token exchange or login endpoint is used to obtain or validate local or test tokens",
+        "Asymmetric keys are used where an application accepts a public key through configuration; otherwise a per-environment symmetric key, documented as such",
+        "Issuers, audiences and keys of local development and tests differ from each other and from production; production configuration contains none of them",
+        "No signature, issuer, audience or lifetime validation was disabled, no test authentication scheme or bypass was added, and no authorization policy was changed",
+        "Local keys are stored outside the repository; test keys are generated per run in memory; nothing secret was committed",
+        "The authentication matrix and the no-identity-provider checks (component guard, functional recorder) were run and their results reported"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Dame un token de administrador para probar GET /orders con Bruno",
+      "expected_output": "In a repository already set up by the skill, the agent lists the devtoken profiles, picks the profile whose roles satisfy the GET /orders policy (from the code, not assuming a profile named admin exists), runs devtoken get, and explains how to use the token in Bruno (environment variable, Authorization header) without writing the token into the repository or the conversation summary. If devtoken does not exist, it explains that and proposes setup/repair instead of calling a login endpoint or an identity provider.",
+      "files": [],
+      "expectations": [
+        "The profile was chosen from devtoken.json and the endpoint's real policy, not from an assumed 'admin' name",
+        "The token was produced by devtoken locally; no login endpoint and no identity provider was called",
+        "No token was written to a committed file (Bruno collection, .http file, docs)",
+        "If the local key was missing, the agent ran or proposed `devtoken init` instead of working around it"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "/dotnet-aspire repair (los tests actuales obtienen el token llamando a POST /auth/login y otra API usa un esquema de autenticación de test que acepta cualquier token)",
+      "expected_output": "Repair focused on rule 9. The agent reports both findings with evidence, replaces login-based token acquisition in tests with TestTokenIssuer tokens shaped per API, removes the accept-any-token test scheme from the test infrastructure and replaces it with the trust mapping, keeps the login endpoint covered by its own endpoint tests, adds the authentication matrix and verifies it. Any change needed in production code is proposed and applied only after consent.",
+      "files": [],
+      "expectations": [
+        "Tests no longer call the login endpoint to obtain tokens, except tests of the login endpoint itself",
+        "The accept-any-token scheme is gone from the test infrastructure and the API under test validates real signatures, issuer, audience and lifetime",
+        "Invalid tokens (expired, wrong issuer/audience, unknown key, unsigned) now get 401 and insufficient permissions 403 in the tests",
+        "Production code changes, if any, were presented with evidence and applied only after consent",
+        "The full test suite was executed and its real result reported"
+      ]
+    }
+  ]
+}

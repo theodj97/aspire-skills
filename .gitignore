@@ -1,0 +1,19 @@
+# skill-creator eval runs and packaged skills
+*-workspace/
+*.skill
+
+# Python (skill-creator scripts)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Editors and IDEs
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
