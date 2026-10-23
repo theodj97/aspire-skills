@@ -79,7 +79,9 @@ Each rule is defined here and detailed in exactly one reference (the canonical p
 7. **Ephemeral by design: every start, in every mode, begins from scratch.** No `WithDataVolume`,
    `WithDataBindMount`, `WithLifetime(ContainerLifetime.Persistent)` or `WithPersistentLifetime` on local data
    resources: no opt-in, no exceptions. Each database is built in a fixed order on every start: create, schema, seed
-   (Local mode only, synthetic SQL in `local/database/seed/`), then the applications (`WaitForCompletion`). Never delete
+   (Local mode only, synthetic SQL in `local/database/seed/`), then the applications (`WaitForCompletion`). The seed is
+   derived from the endpoints so that every endpoint works with the devtoken profiles right after start (*changed*:
+   it is no longer optional). Never delete
    pre-existing volumes or containers, never run `aspire stop --force --volumes` or `docker volume rm` without explicit
    consent for that operation, never connect to shared or production databases. → `references/database.md`
 8. **Real infrastructure, simulated third parties, nothing leaves the machine in tests.** Databases, caches, brokers
@@ -105,8 +107,9 @@ Each rule is defined here and detailed in exactly one reference (the canonical p
     output. Local keys live only in the AppHost user secrets; test keys only in memory.
     → `references/local-jwt-authentication.md` § Key storage, `references/observability.md` § Secrets in telemetry
 11. **No machine-wide side effects without consent.** Ask before installing global tools, templates or npm packages,
-    trusting certificates, or touching user-level agent configuration. (`devtoken init` writing the AppHost user
-    secrets is the documented, intended exception.) → `references/apphost.md` § Creating the AppHost,
+    or touching user-level agent configuration. Two documented, intended exceptions: `devtoken init` writing the AppHost
+    user secrets, and trusting the HTTPS development certificate (*changed*: done by default in setup/repair, reported,
+    `references/local-development.md` § HTTPS development certificate). → `references/apphost.md` § Creating the AppHost,
     `references/local-development.md` § Official Aspire AI agent integration
 12. **Truthful reporting and real verification.** Report real commands with real exit codes; never hide an exit code
     behind `tail`/`grep` when it matters. Never claim a build, migration, startup, test, telemetry check or "no external
@@ -117,7 +120,7 @@ Each rule is defined here and detailed in exactly one reference (the canonical p
 
 ### Phase 0 — Tooling and workspace state
 Run and record the commands of `references/discovery.md` § 0 (git status, SDKs, `global.json`, Aspire CLI, container
-runtime, running AppHosts, templates). Read `CLAUDE.md`/`AGENTS.md` and honor them. No container runtime or CLI:
+runtime, running AppHosts, templates, HTTPS development certificate trust). Read `CLAUDE.md`/`AGENTS.md` and honor them. No container runtime or CLI:
 say so immediately and continue with what does not need them.
 
 ### Phase 1 — Discovery
@@ -136,11 +139,15 @@ baseline) may continue. Incremental test work uses the short report and continue
 ### Phase 3 — Layout, AppHost and solution
 `references/architecture-and-layout.md` and `references/apphost.md`: create or repair the single AppHost under
 `local/aspire/`, the contract, the mode switch, evidence-backed resources with explicit references and waits; add every
-new project to the solution and verify with `dotnet sln list`; consolidate an existing test AppHost with consent.
+new project to the solution and verify with `dotnet sln list`; consolidate an existing test AppHost with consent;
+trust the HTTPS development certificate if it is not trusted yet (`references/local-development.md` § HTTPS development
+certificate).
 
 ### Phase 4 — Database
 `references/database.md`: one authoritative schema strategy (A–E) per database; the `{App}.DbInitializer` applies the
-schema in every mode and the seed in Local mode; applications wait for it; no persistence.
+schema in every mode and the seed in Local mode; applications wait for it; no persistence. Design the seed from the
+endpoint inventory (`references/database.md` § Designing the seed from the endpoints): every endpoint answers with
+meaningful data for its devtoken profiles, documented in a seed coverage table.
 
 ### Phase 5 — Configuration and secrets
 `references/apphost.md` § Configuration and secrets, `references/local-development.md` § Configuration and external
@@ -175,7 +182,7 @@ with an explicit skill list; MCP only with consent.
 
 ### Phase 11 — Validation
 `references/validation-and-checklist.md`: structure, build, tests (twice when new) with a fail proof, local start,
-two-run check, smoke requests with devtoken profiles, telemetry, no-identity-provider evidence and guard sabotage,
+certificate trusted, two-run check, seed coverage check with devtoken profiles, telemetry, no-identity-provider evidence and guard sabotage,
 production isolation, agent skills. Stop only the AppHosts you started.
 
 ### Phase 12 — Documentation

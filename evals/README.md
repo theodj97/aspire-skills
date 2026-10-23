@@ -31,5 +31,5 @@ With the skill-creator skill:
 2. Save the outputs and transcripts per run.
 3. Grade each run against the `expectations` of its prompt.
 
-After each run check that no volume, global npm package, template or certificate was installed or removed without
-consent, and that no token or key was committed.
+After each run check that no volume, global npm package or template was installed or removed without consent, that
+an existing development certificate was not cleaned (trusting it is intended), and that no token or key was committed.
