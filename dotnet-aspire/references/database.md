@@ -291,7 +291,8 @@ Test modes never run the seed: tests build their own data (§ Test repositories)
      state it rejects;
    - for flows: one record at the start of each flow (an order waiting for payment, a document awaiting approval).
 3. **Write a seed coverage table** in `local/local-development.md` § Database: endpoint | devtoken profile | seeded
-   data used (ids) | expected status and content. It is the specification the scripts must satisfy and the manual
+   data used (ids) | expected status and content (plus the Bruno request when the repository has a brunoGen collection,
+   `bruno-collection.md`). It is the specification the scripts must satisfy and the manual
    test guide for developers.
 4. **Write the scripts** in `local/database/seed/NNN_description.sql`, ordered by dependency (`001_reference_data.sql`,
    `002_users.sql`, `003_orders.sql`…), run in ordinal name order after the schema, one transaction per script.
@@ -317,7 +318,8 @@ Test modes never run the seed: tests build their own data (§ Test repositories)
   `local/database/seed/<store>/` (JSON documents, keys) that the initializer loads with the client the application
   already uses, after the relational seed when they reference it.
 - **Keep it in sync:** a change that adds a migration, a required column, a new endpoint or a new policy updates the
-  seed and the coverage table in the same change. A failing initializer usually means the seed no longer matches the
+  seed and the coverage table in the same change, and the Bruno layer when there is one (`bruno-collection.md`
+  § Populating every request). A failing initializer usually means the seed no longer matches the
   schema: fix the script, not the migration.
 
 ## Safety

@@ -137,6 +137,19 @@ the seed and the table in the same change. A broken script stops the initializer
 
 <Services that stay external and what happens without them. Identity providers are never needed locally.>
 
+## Bruno collection
+
+<Only with a brunoGen layer in tools/bruno.> The `<aspire-local>` environment targets this AppHost and the seeded data;
+tokens come from devtoken, never from the login endpoint.
+
+```bash
+dotnet local/tools/devtoken.cs dotenv tools/bruno/custom/.env     # DEVTOKEN_<PROFILE> keys, git-ignored (re-run when they expire)
+brunoGen import                                                   # regenerate the collection (edit only tools/bruno/custom)
+cd <Solution>Collection && npx -y @usebruno/cli run --env <aspire-local>
+```
+
+Requests that change data (<delete, ship…>) consume their seeded rows: restart the AppHost to reinstall the seed.
+
 ## Tests
 
 ```bash

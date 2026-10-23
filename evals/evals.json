@@ -141,6 +141,35 @@
         "Production code changes, if any, were presented with evidence and applied only after consent",
         "The full test suite was executed and its real result reported"
       ]
+    },
+    {
+      "id": 10,
+      "prompt": "Comprueba que la colección de Bruno funciona con los datos del entorno Aspire local",
+      "expected_output": "In a repository with a brunoGen layer (tools/bruno) and an Aspire Local mode with a seed, the agent reads the custom layer, adds or updates a local environment (baseUrl of the AppHost, authMode devtoken, seeded ids as variables), adds the devtoken branch to the collection before-request script keeping the other environments' auto-login, aligns every request's params and bodies with the seed coverage table (dedicated rows for destructive requests), adds status assertions, writes DEVTOKEN_* keys with devtoken dotenv, runs brunoGen import and check, and runs the collection with the Bruno CLI until every request passes.",
+      "files": [],
+      "expectations": [
+        "Only files under tools/bruno/custom (and the seed or docs when rows were missing) were changed; the generated collection was not edited by hand",
+        "The local environment's requests obtain tokens from devtoken (DEVTOKEN_* in the git-ignored .env), not from a login endpoint; other environments keep their mechanism",
+        "Path params, query params and bodies reference seeded ids or values through environment variables; destructive requests target rows seeded for that purpose",
+        "Every request has at least a res.status assertion matching the seed coverage table",
+        "brunoGen check exited 0 and the Bruno CLI run passed every request on a fresh AppHost start, with the counts reported",
+        "No token, password or key was written to environments, bodies, the manifest or committed files"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "/dotnet-aspire conform-tests",
+      "expected_output": "On a repository with existing tests that use Testcontainers or a shared database, Thread.Sleep waits, resets after the test, hard-coded ids and a test authentication scheme, the agent runs the suite as a baseline, audits every test project against the findings catalogue (file:line, rule, category S/I/R/M), presents a batch plan (R and I first, then S, M only if asked) and waits for confirmation; then applies one batch at a time, building and running the full suite after each, never weakening or deleting assertions, and reports before/after conformance and test counts.",
+      "files": [],
+      "expectations": [
+        "A baseline test run with per-project counts was recorded before any change",
+        "The audit lists each finding with file:line, the rule broken, its category and the proposed change, and no file was changed before the user confirmed",
+        "Batches were applied one finding type at a time, each followed by a build and a full test run whose results were reported",
+        "No previously passing test fails at the end, the number of test cases per project did not drop, and no assertion was weakened, skipped or deleted",
+        "The test authentication scheme was replaced by locally signed tokens and real validation; production code and authorization policies were not changed",
+        "Framework or library migrations were not done unless the user asked for them",
+        "The final report has the before/after conformance table, the renamed/moved tests mapping and any bug revealed"
+      ]
     }
   ]
 }

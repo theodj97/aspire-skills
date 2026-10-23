@@ -268,6 +268,11 @@ resilience handler).
 
 ## 8. Existing tests and docs
 
+**API clients.** A brunoGen layer (`git ls-files '*bruno.config.json' '*/custom/manifest.json'`) means the Bruno
+collection must be aligned with the local seed (`bruno-collection.md`): record its environments, the collection auth
+script (an auto-login against a login endpoint is a rule-9 finding for the local environment), the manifest entries
+with literal ids and which environment they belong to, and whether `brunoGen` is installed (`brunoGen --version`).
+
 Test projects and framework (xUnit v2/v3 and exact package flavour, NUnit, MSTest), runner mode (VSTest/MTP), mocking
 (Moq, NSubstitute, FakeItEasy), assertions (xUnit Assert, FluentAssertions, Shouldly, AwesomeAssertions), data (Bogus,
 AutoFixture), infrastructure (Testcontainers, `WebApplicationFactory` subclasses, fixtures, base classes,

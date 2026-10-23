@@ -8,8 +8,9 @@ description: >-
   identity provider. Use it to set up or fix the local environment, run or debug the app locally, get local tokens,
   or add, extend or fix tests of endpoints, roles, flows, classes or the test infrastructure, even if Aspire or xUnit
   are not mentioned: "add tests for POST /orders", "levanta el entorno local", "añade tests", "testea este endpoint",
-  "dame un token de admin", "monta la infraestructura de pruebas". Arguments: audit | setup | repair | debug <symptom>.
-argument-hint: "[audit | setup | repair | debug <symptom>]"
+  "dame un token de admin", "monta la infraestructura de pruebas". Also aligns brunoGen Bruno collections with the local
+  seed. Arguments: audit | setup | repair | debug <symptom> | conform-tests.
+argument-hint: "[audit | setup | repair | debug <symptom> | conform-tests]"
 compatibility: Needs the repository's .NET SDK (10+ for the single-file devtoken tool), the Aspire CLI (verified with 13.6.x) and Docker or Podman for containers. Unit tests need none of them.
 ---
 
@@ -34,9 +35,12 @@ Read `$ARGUMENTS`, or the user's request when the skill was selected automatical
 | `audit` | Discovery and gap report only. No file changes. | 0–2 |
 | `setup`, or empty / "set up the environment or tests" with no AppHost | Full creation | 0–13 |
 | `repair`, or empty with an existing AppHost (including consolidating a test AppHost) | Reconcile with the rules below | 0–13 |
+| `conform-tests`, or "refactor the tests to follow this skill" | Audit existing tests against the standards, then refactor them in confirmed, verified batches (`references/test-conformance.md`) | baseline, audit, plan, wait for confirmation, batches, report |
 | `debug <symptom>` | Runtime diagnosis (`references/local-development.md` § Debugging loop) | until a verified fix or an honest report |
 | Tests for a behaviour (endpoint, case, flow, class) and the infrastructure exists | Incremental test work | 0, 1 (short report), 9, 11 (build, tests, fail proof), summary; 3 and 8 only for announced additive changes (a new infrastructure dependency) |
 | Tests requested but that test type has no project or fixture yet | Partial setup of that piece, announced first, then incremental | 0–2 (short), 8 for the missing piece, 9, 11, summary |
+| "Add test data for …" (local seed) | `references/database.md` § Seed data, then the Bruno requests of those endpoints when a brunoGen layer exists | 0, 1 (short), 4, 11 (seed coverage and Bruno run) |
+| "Align / check the Bruno collection with the local data" | `references/bruno-collection.md` § Workflow on the existing seed (Local mode running) | 0, 1 (short), 4 (seed only if rows are missing), 11 (Bruno run) |
 | "Give me a token for …" | `dotnet local/tools/devtoken.cs get --profile <name>` if devtoken exists; otherwise explain and propose `setup`/`repair` | — |
 
 ## Non-negotiable rules
@@ -69,7 +73,7 @@ Each rule is defined here and detailed in exactly one reference (the canonical p
 6. **Minimal, reversible changes; production code is not yours to change.** Preserve architecture, names, namespaces,
    migration history, existing infrastructure and user modifications. No unrelated upgrades or reorganizations; never
    delete and recreate an existing AppHost because it differs from a template; follow existing test conventions in
-   incremental work. Production code changes are limited to declared testability changes (`public partial class
+   incremental work (only `conform-tests` changes them, on request). Production code changes are limited to declared testability changes (`public partial class
    Program;` on .NET 8/9, `InternalsVisibleTo`). Never change production code or authorization policies to make a test
    or a local run pass: report the bug with the failing test. A rule violation found in production code is reported
    with evidence and a proposed fix, and fixed after consent; violations in `local/` or `tests/` are fixed directly as
@@ -148,6 +152,8 @@ certificate).
 schema in every mode and the seed in Local mode; applications wait for it; no persistence. Design the seed from the
 endpoint inventory (`references/database.md` § Designing the seed from the endpoints): every endpoint answers with
 meaningful data for its devtoken profiles, documented in a seed coverage table.
+When the repository keeps a Bruno collection with brunoGen, align it with the seed in the same phase
+(`references/bruno-collection.md`).
 
 ### Phase 5 — Configuration and secrets
 `references/apphost.md` § Configuration and secrets, `references/local-development.md` § Configuration and external
@@ -183,7 +189,7 @@ with an explicit skill list; MCP only with consent.
 ### Phase 11 — Validation
 `references/validation-and-checklist.md`: structure, build, tests (twice when new) with a fail proof, local start,
 certificate trusted, two-run check, seed coverage check with devtoken profiles, telemetry, no-identity-provider evidence and guard sabotage,
-production isolation, agent skills. Stop only the AppHosts you started.
+production isolation, agent skills, and the Bruno collection run when there is one. Stop only the AppHosts you started.
 
 ### Phase 12 — Documentation
 `local/local-development.md` from `assets/local/local-development.md` and `tests/README.md` from
@@ -203,10 +209,12 @@ complete only when every applicable item of § Acceptance checklist is satisfied
 | `references/apphost.md` | Creating, repairing or consolidating the AppHost; modes; contract; resources; parameters |
 | `references/database.md` | Schema strategy, initializer and seed, ephemeral rule and safety, schema and resets in tests, repositories, builders |
 | `references/local-jwt-authentication.md` | Anything about tokens, trust, roles/claims/scopes, devtoken, `TestTokenIssuer`, auth tests, production isolation |
+| `references/bruno-collection.md` | Only when the repository has a brunoGen layer (`tools/bruno/bruno.config.json`): local environment, devtoken auth, params/bodies aligned with the seed, `bru run` |
 | `references/local-development.md` | Running and configuring Local mode, external services, the operational doc, `aspire agent init`, MCP, debugging |
 | `references/observability.md` | ServiceDefaults, instrumentation, dashboard verification, secrets in telemetry, test-mode observability |
 | `references/integration-testing.md` | Test types and modes of test work, writing tests, identity, fixtures, component and functional tests, xUnit v2 |
 | `references/unit-tests.md` | Writing unit tests |
+| `references/test-conformance.md` | Mode `conform-tests`: findings catalogue for existing tests, batch refactor rules, report |
 | `references/messaging.md` | Kafka, RabbitMQ, Service Bus, SQS: publishing, consuming and verifying messages |
 | `references/external-services.md` | Substitute per dependency and mode, WireMock, MailPit, cloud emulators, "nothing leaves the machine" |
 | `references/validation-and-checklist.md` | Verification commands, acceptance checklist, report table, final report |

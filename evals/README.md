@@ -1,9 +1,9 @@
 # Test prompts for `dotnet-aspire`
 
-`evals.json` holds nine prompts, each with the expected result and verifiable expectations, in the skill-creator
+`evals.json` holds eleven prompts, each with the expected result and verifiable expectations, in the skill-creator
 `evals.json` schema, so they can be run with and without the skill and graded. Prompts 1–4 come from the former
 `dotnet-aspire-local-environment` evals, 5–6 from `dotnet-structured-testing`, both updated to the single AppHost and
-local JWT rules; 7–9 are new.
+local JWT rules; 7–11 are new.
 
 ## What each prompt needs from the target repository
 
@@ -18,6 +18,8 @@ local JWT rules; 7–9 are new.
 | 7 | Quiero probar todas las APIs en local… | Setup/repair of authentication | Several protected services: one with login endpoints and a key in configuration, one config-bound with a production `Authority`, ideally a gRPC host. |
 | 8 | Dame un token de administrador… | Token request | Prompt 2's output. Optionally without `devtoken init` run, to check the missing-key path. |
 | 9 | `/dotnet-aspire repair (…)` | Repair of rule 9 violations | Tests that obtain tokens from `POST /auth/login`, and another API tested with an accept-any-token scheme. |
+| 10 | Comprueba que la colección de Bruno funciona… | Bruno alignment | A brunoGen layer in `tools/bruno` (e.g. with an auto-login script and literal ids from another database) and an Aspire Local mode with a seed. |
+| 11 | `/dotnet-aspire conform-tests` | Test conformance | Existing tests with Testcontainers or a shared database, `Thread.Sleep`, resets after the test, hard-coded ids and a test authentication scheme. |
 
 Docker or Podman and the Aspire CLI must be available for prompts 2–7 and 9 to reach runtime verification. Without
 them, grade the runtime expectations on whether the agent reported precisely what it could not run.

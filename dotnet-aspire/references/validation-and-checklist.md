@@ -13,6 +13,7 @@ passed unless you ran it and saw it pass.
 - [5. Smoke requests, tokens and telemetry](#5-smoke-requests-tokens-and-telemetry)
 - [6. Authentication and production isolation](#6-authentication-and-production-isolation)
 - [7. Agent integration](#7-agent-integration)
+- [7b. Bruno collection](#7b-bruno-collection)
 - [8. Clean-up](#8-clean-up)
 - [Acceptance checklist](#acceptance-checklist)
 - [Report table](#report-table)
@@ -101,7 +102,7 @@ and `Healthy` when they have health checks. Explain any other state with logs.
 | The guards work | remove one `TrustValue.Empty` mapping on purpose: the component fixture must fail naming the metadata address and the functional recorder must list the `CONNECT`; then revert and rerun |
 | Validation is real | the authentication matrix passes (`local-jwt-authentication.md` § Authentication and authorization tests): invalid, expired, wrong issuer/audience, unknown key and unsigned tokens get 401, insufficient permissions 403 |
 | Every protected service treated the same | each one has a trust mapping, devtoken profiles and the matrix, whether or not it has login endpoints |
-| No local/test values in production configuration | `grep -rn -E '<local issuer>|<test issuer>|local-dev|:tests' src` prints nothing; no keys in committed `*.json` under `src/` or `local/` |
+| No local/test values in production configuration | searching `src/` for the local and test issuers and audiences (e.g. `local-dev`, `:tests`) finds nothing; no keys in committed `*.json` under `src/` or `local/` |
 | Nothing local deployable | `src/` references neither `local/` nor `tests/`; devtoken, AppHost and DbInitializer are not in publish/deploy pipelines |
 | No bypass | no `AllowAnonymous`/test scheme/`ValidateX = false` introduced; policies unchanged (`git diff` of authorization code is empty unless the user approved a change) |
 | Secrets | `git status`/`git diff` contain no token, key, password, connection string with credentials or dashboard token; local keys are only in the AppHost user secrets |
@@ -110,6 +111,12 @@ and `Healthy` when they have health checks. Explain any other state with logs.
 
 - `aspire agent init --help` supports the options used; installed `SKILL.md` files are at the repository-root
   location(s); no unintended `.mcp.json`; no nested duplicates; custom skills unchanged.
+
+## 7b. Bruno collection
+
+Only with a brunoGen layer (`bruno-collection.md` § Verification): `devtoken dotenv`, `brunoGen import`,
+`brunoGen check` exit 0, no empty param or body field (`assets/bruno/find-empty-values.py` exit 0), and `npx -y @usebruno/cli run --env <local environment>` from the collection folder on a fresh
+AppHost start, with every request and assertion passing; no request takes its token from a login endpoint.
 
 ## 8. Clean-up
 
@@ -153,6 +160,8 @@ The work is complete only when each item is satisfied or explicitly reported as 
       found with `aspire otel`/`aspire logs`.
 - [ ] `aspire agent init` ran with verified options (MCP only with consent), or the blocker is reported.
 - [ ] `local/local-development.md` describes the real implementation, including tokens and tests.
+- [ ] With a brunoGen layer: every request uses seeded data and devtoken tokens in the local environment, asserts its
+      expected result, and the whole collection passed with `bru run`; `brunoGen check` exit 0.
 
 **Authentication**
 - [ ] Every protected service runs and is tested with locally signed JWTs through its trust mapping, independently of
@@ -189,6 +198,7 @@ The work is complete only when each item is satisfied or explicitly reported as 
 | Auth smoke | curl with devtoken profiles | — | 200 / 401 / 403 as expected per profile |
 | No IdP | aspire otel traces catalog-api | 0 | server spans only |
 | Smoke + trace | curl GET /orders | 200 | trace with server + PostgreSQL client spans |
+| Bruno | npx @usebruno/cli run --env aspire-local | 0 | 6 requests passed, 8/8 assertions |
 | Agent init | aspire agent init … | 0 | 4 skills in .claude/skills |
 ```
 

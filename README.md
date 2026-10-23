@@ -29,6 +29,7 @@ how a .NET repository it has never seen runs locally and is tested. It merges an
 | 🗂 **Clear folders** | `src/` application code · `tests/` every test · `local/` everything local: the AppHost, database initializer, seed, the `devtoken` tool. |
 | 🧩 **One AppHost, three modes** | `local/aspire/{App}.AppHost` serves `aspire run` (Local mode) and the component and functional test fixtures (Component and Functional modes). One topology, no copies. |
 | 🗄 **From scratch, every run** | No volumes, no persistent containers: every start creates the databases, applies the schema and (Local mode) a synthetic seed designed from the endpoints, so every endpoint works with the local token profiles right after start. |
+| 🧾 **Bruno ready** | When the repo keeps a brunoGen collection, its params, bodies and auth are aligned with the seed and devtoken, and `bru run` proves every request works locally. |
 | 🔒 **HTTPS ready** | The development certificate is trusted by default (reported, never cleaned), so the dashboard and `https` profiles work without warnings. |
 | 🔐 **Local JWT, no identity provider** | Every protected API, with or without login endpoints, trusts a local issuer through the configuration keys it already reads. `devtoken` signs tokens for profiles from the real roles and scopes; tests sign their own with a new key per run. Validation stays on; nothing calls a provider, and tests prove it. |
 | 🧪 **Real tests** | Unit (NSubstitute), component (`WebApplicationFactory` + real containers) and functional (apps as Aspire resources, black box) with Respawn resets, WireMock for third parties and an authentication matrix (401 vs 403). |
@@ -69,6 +70,7 @@ The skill triggers on natural language (English or Spanish) and accepts explicit
 /dotnet-aspire setup                         # create the environment, local JWT and test infrastructure
 /dotnet-aspire repair                        # reconcile an existing setup (e.g. merge a separate test AppHost)
 /dotnet-aspire debug POST /orders returns 500
+/dotnet-aspire conform-tests                 # audit existing tests and refactor them to the standards, in verified batches
 Añade tests de componente para POST /orders, incluyendo autorización por rol
 Dame un token de administrador para probar la API de pedidos
 ```
@@ -92,10 +94,12 @@ Setup and repair always present a plan and wait for confirmation before substant
 │   │   ├── apphost.md                  The single AppHost: modes, contract, resources, repair, consolidation
 │   │   ├── database.md                 Strategies A–E, initializer + seed, ephemeral rule, safety, test resets
 │   │   ├── local-jwt-authentication.md Trust strategies, mapping, devtoken, TestTokenIssuer, isolation, auth tests
-│   │   ├── local-development.md        Local mode, configuration, tokens, agent integration, debugging loop
+│   │   ├── local-development.md        Local mode, certificate, configuration, tokens, agent integration, debugging loop
+│   │   ├── bruno-collection.md         brunoGen collections aligned with the local seed and devtoken (only when present)
 │   │   ├── observability.md            ServiceDefaults, instrumentation, dashboard verification, test modes
 │   │   ├── integration-testing.md      Test types, conventions, fixtures, component and functional tests
 │   │   ├── unit-tests.md               Unit tests
+│   │   ├── test-conformance.md         conform-tests: audit existing tests and refactor them in verified batches
 │   │   ├── messaging.md                Kafka, RabbitMQ, Service Bus, SQS
 │   │   ├── external-services.md        Substitutes per mode, WireMock, MailPit, "nothing leaves the machine"
 │   │   ├── validation-and-checklist.md Verification, acceptance checklist, final report
